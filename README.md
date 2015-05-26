@@ -2,6 +2,10 @@
 
 A simple semaphore implementation in golang using channels
 
+[![Build 
+Status](https://travis-ci.org/fzerorubigd/semaphore.svg?branch=master)](https://travis-ci.org/fzerorubigd/semaphore)
+
+
 ## Useage 
 
 ```go 
