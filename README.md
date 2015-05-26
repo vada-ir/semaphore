@@ -4,7 +4,8 @@ A simple semaphore implementation in golang using channels
 
 [![Build 
 Status](https://travis-ci.org/fzerorubigd/semaphore.svg?branch=master)](https://travis-ci.org/fzerorubigd/semaphore)
-
+[![Coverage 
+Status](https://coveralls.io/repos/fzerorubigd/semaphore/badge.svg?branch=master)](https://coveralls.io/r/fzerorubigd/semaphore?branch=master)
 
 ## Useage 
 
