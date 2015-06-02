@@ -1,4 +1,4 @@
-# Semphore
+# Semaphore
 
 A simple semaphore implementation in golang using channels
 
@@ -7,7 +7,7 @@ Status](https://travis-ci.org/vada-ir/semaphore.svg?branch=master)](https://trav
 [![Coverage 
 Status](https://coveralls.io/repos/vada-ir/semaphore/badge.svg?branch=master)](https://coveralls.io/r/vada-ir/semaphore?branch=master)
 
-## Useage 
+## Usage 
 
 ```go 
 
