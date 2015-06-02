@@ -3,9 +3,9 @@
 A simple semaphore implementation in golang using channels
 
 [![Build 
-Status](https://travis-ci.org/fzerorubigd/semaphore.svg?branch=master)](https://travis-ci.org/fzerorubigd/semaphore)
+Status](https://travis-ci.org/vada-ir/semaphore.svg?branch=master)](https://travis-ci.org/vada-ir/semaphore)
 [![Coverage 
-Status](https://coveralls.io/repos/fzerorubigd/semaphore/badge.svg?branch=master)](https://coveralls.io/r/fzerorubigd/semaphore?branch=master)
+Status](https://coveralls.io/repos/vada-ir/semaphore/badge.svg?branch=master)](https://coveralls.io/r/vada-ir/semaphore?branch=master)
 
 ## Useage 
 
