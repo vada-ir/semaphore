@@ -1,20 +1,13 @@
 package semaphore
 
 import (
-	"log"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
-
-	"net/http"
-	_ "net/http/pprof"
 )
 
 func TestUsage(t *testing.T) {
-	go func() {
-		log.Println(http.ListenAndServe("localhost:6060", nil))
-	}()
 
 	s := NewSemaphore(10)
 	assert.Equal(t, 10, s.PermitCount())

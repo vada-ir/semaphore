@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/fzerorubigd/semaphore"
+	"github.com/vada-ir/semaphore"
 )
 
 func crawl(index int, s semaphore.Semaphore) {
@@ -25,5 +25,5 @@ func main() {
 		go crawl(i, s)
 	}
 
-	s.Wait()
+	s.Acquire(s.PermitCount())
 }

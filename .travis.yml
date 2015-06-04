@@ -14,5 +14,4 @@ script:
   - goveralls -v -service travis-ci -repotoken $COVERALLS_TOKEN
 matrix:
   allow_failures:
-    - go: tip
     - go: 1.1

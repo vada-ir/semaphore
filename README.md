@@ -2,14 +2,14 @@
 
 A simple semaphore implementation in golang using channels
 
-[![Build 
+[![Build
 Status](https://travis-ci.org/vada-ir/semaphore.svg?branch=master)](https://travis-ci.org/vada-ir/semaphore)
-[![Coverage 
+[![Coverage
 Status](https://coveralls.io/repos/vada-ir/semaphore/badge.svg?branch=master)](https://coveralls.io/r/vada-ir/semaphore?branch=master)
 
-## Usage 
+## Usage
 
-```go 
+```go
 
 package main
 
@@ -18,7 +18,7 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/fzerorubigd/semaphore"
+	"github.com/vada-ir/semaphore"
 )
 
 func crawl(index int, s semaphore.Semaphore) {
