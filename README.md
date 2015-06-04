@@ -38,7 +38,8 @@ func main() {
 		go crawl(i, s)
 	}
 
-	s.Wait()
+	// Wait for all permits
+	s.Acquire(s.PermitCount())
 }
 
 ```
