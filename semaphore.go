@@ -1,7 +1,10 @@
 // Package semaphore create a simple semaphore with channels.
 package semaphore
 
-import "time"
+import (
+	"sync"
+	"time"
+)
 
 // Semaphore is for managing permit
 type Semaphore interface {
@@ -17,10 +20,7 @@ type Semaphore interface {
 	Release(int)
 	// TryRelease try to release permits and if no permit already taken, return
 	// the number of actually relaesed permits
-	TryRelease(int) int
-	// Wait for all permits. this is a simple hack, and maybe removed in next changes.
-	// for wait, its better to use sync.WaitGroup.
-	Wait()
+	TryRelease(int, time.Duration) int
 }
 
 // ResizableSemaphore is a semaphore with resize ability, but it cost unstability after resize.
@@ -38,7 +38,12 @@ type ResizableSemaphore interface {
 type empty struct{}
 
 type semaphore struct {
+	// the main chan wit size
 	c chan empty
+	// a zero size channel, its the entry point of semaphore
+	e chan empty
+	// A lock, used at resize semaphore
+	sync.RWMutex
 }
 
 type resizable struct {
@@ -48,60 +53,29 @@ type resizable struct {
 }
 
 func (s *semaphore) PermitCount() int {
-	return cap(s.c)
+	s.RLock()
+	defer s.RUnlock()
+
+	return cap(s.c) + 1
 }
 
 func (s *semaphore) Acquire(n int) {
-	var write = func() (result bool) {
-		defer func() {
-			if e := recover(); e != nil {
-				result = false
-				return
-			}
-
-			result = true
-		}()
-		s.c <- empty{}
-		return
-	}
-	for i := 0; i < n; {
-		if write() {
-			i++
-		}
+	for i := 0; i < n; i++ {
+		s.e <- empty{}
 	}
 }
 
 func (s *semaphore) TryAcquire(n int, d time.Duration) int {
 	var total int
 	dc := time.After(d)
-
-	var write = func() (result bool, finished bool) {
-		defer func() {
-			if e := recover(); e != nil {
-				result = false
-				return
-			}
-
-			result = true
-		}()
+	for i := 0; i < n; i++ {
 		select {
-		case s.c <- empty{}:
+		case s.e <- empty{}:
+			total++
 		case <-dc:
-			finished = true
-		}
-		return
-	}
-	for i := 0; i < n; {
-		result, finished := write()
-		if finished {
 			return total
 		}
-		if result {
-			total++
-			i++
-		}
 	}
-
 	return total
 }
 
@@ -114,8 +88,9 @@ func (s *semaphore) Release(n int) {
 	}
 }
 
-func (s *semaphore) TryRelease(n int) int {
+func (s *semaphore) TryRelease(n int, d time.Duration) int {
 	var total int
+	dc := time.After(d)
 	for i := 0; i < n; {
 		select {
 		case _, ok := <-s.c:
@@ -123,7 +98,7 @@ func (s *semaphore) TryRelease(n int) int {
 				total++
 				i++
 			}
-		default:
+		case <-dc:
 			return total
 		}
 	}
@@ -131,48 +106,78 @@ func (s *semaphore) TryRelease(n int) int {
 	return total
 }
 
-func (s *semaphore) Wait() {
-	all := s.PermitCount()
-	s.Acquire(all)
-	s.TryRelease(all)
+func (s *semaphore) loop() {
+	for {
+		// Read from the entry channel
+		tmp := <-s.e
+
+		s.RLock()
+		s.c <- tmp
+		s.RUnlock()
+	}
 }
 
 func (s *resizable) Resize(n int) {
+	s.Lock()
+	defer s.Unlock()
+
 	s.stable++
-	// First create new channel
-	c := make(chan empty, n)
-	// Swap channels
-	c, s.c = s.c, c
-	// Close the old one
-	close(c)
+	// close the sized channel
+	close(s.c)
 	// its time to copy all permits from the old channel to new channel
-	go func() {
-		var count int
-		for {
-			// c is a closed channel, it return as soon as possible, no need to select here
-			_, ok := <-c
-			if !ok { // false means we reach the end of closed channel.
-				break
-			}
-			count++
+	var count int
+	for {
+		// c is a closed channel, it return as soon as possible, no need to select here
+		_, ok := <-s.c
+		if !ok { // false means we reach the end of closed channel.
+			break
 		}
-		if count > 0 {
-			s.Acquire(count)
+		count++
+	}
+	c := make(chan empty, n-1)
+
+	var remain int
+	for i := 0; i < count; i++ {
+		select {
+		case c <- empty{}:
+		default:
+			remain++
 		}
+	}
+	s.c = c
+	// try to acquire other value
+	if remain > 0 {
+		// TODO stable
+		go func() {
+			s.Acquire(remain)
+			// ok its stable now!
+			s.Lock()
+			defer s.Unlock()
+			s.stable--
+		}()
+	} else {
+		// its already locked
 		s.stable--
-	}()
+	}
 }
 
 func (s *resizable) Stable() bool {
+	s.RLock()
+	defer s.RUnlock()
+
 	return s.stable == 0
 }
 
 // NewSemaphore return a new semaphore with requested size
 func NewSemaphore(size int) Semaphore {
-	return &semaphore{make(chan empty, size)}
+	s := semaphore{make(chan empty, size-1), make(chan empty), sync.RWMutex{}}
+	go s.loop()
+	return &s
 }
 
 // NewResizableSemaphore return a resizable semaphore with requested size
 func NewResizableSemaphore(size int) ResizableSemaphore {
-	return &resizable{semaphore{make(chan empty, size)}, 0}
+	s := resizable{semaphore{make(chan empty, size-1), make(chan empty), sync.RWMutex{}}, 0}
+	go s.loop()
+	return &s
 }
