@@ -7,9 +7,9 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUsage(t *testing.T) {
+func TestUsageResizable(t *testing.T) {
 
-	s := NewSemaphore(10)
+	s := NewResizableSemaphore(10)
 	assert.Equal(t, 10, s.PermitCount())
 
 	s.Acquire(9)
@@ -47,4 +47,29 @@ func TestUsage(t *testing.T) {
 	assert.Equal(t, 2, c)
 
 	s.TryRelease(2, time.Millisecond)
+}
+
+func TestResizable(t *testing.T) {
+	r := NewResizableSemaphore(10)
+
+	r.Acquire(10)
+
+	//	var unlocked = false
+	var fun = make(chan struct{})
+	go func() {
+		r.Acquire(3)
+		fun <- struct{}{}
+	}()
+
+	r.Resize(14)
+	<-fun
+
+	assert.Equal(t, 14, r.PermitCount())
+	assert.Equal(t, true, r.Stable())
+	r.Resize(5)
+
+	assert.Equal(t, false, r.Stable())
+	r.Release(13)
+
+	assert.Equal(t, true, r.Stable())
 }
